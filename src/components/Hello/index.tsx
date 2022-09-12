@@ -112,9 +112,11 @@ const SharedLayoutAnimation = () => {
       <div className='flex flex-col items-center justify-center w-full divide-y divide-gray-500'>
         {/* <AnimatePresence mode='popLayout'> */}
         <LayoutGroup>
-          {calls.map((call) => (
-            <CallItem call={call} key={call.id} />
-          ))}
+          <AnimatePresence>
+            {calls.map((call) => (
+              <CallItem call={call} key={call.id} />
+            ))}
+          </AnimatePresence>
         </LayoutGroup>
         {/* </AnimatePresence> */}
       </div>
@@ -138,16 +140,33 @@ const CallItem = ({ call }) => {
         'text-red-500': call.type === 'missed',
         'text-white': call.type === 'received',
       })}
+      // TODO : check if I need the layout animation
       transition={{
         layout: {
-          duration: 0.5,
-        },
-        // exit: { // WRAP WITH ANIMATE PRESENCE
-        //   opacity: 0,
+          duration: 0.3,
 
-        //   duration: 5,
-        // },
+          type: 'spring',
+          stiffness: 200,
+          damping: 10,
+          bounce: 0.01,
+        },
+        exit: {
+          // WRAP WITH ANIMATE PRESENCE
+          opacity: 0,
+
+          duration: 0.3,
+        },
       }}
+      initial={{
+        y: -50,
+      }}
+      animate={{
+        y: 0,
+        transition: {
+          duration: 0.3,
+        },
+      }}
+
       // layoutId='call'
       // animate={{ opacity: 1, transition: { duration: 0.3 } }}
       //  exit={{ opacity: 0, transition: { duration: 5 } }}
