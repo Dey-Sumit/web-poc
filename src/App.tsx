@@ -1,11 +1,6 @@
-import Hello from '~/components/Hello';
+import ExplorerTab from './react-interview-questions/1-ExplorerTab';
 
 function App() {
-  return (
-    <>
-      <Hello />
-    </>
-  );
+  return <ExplorerTab />;
 }
-const a = 12;
 export default App;
