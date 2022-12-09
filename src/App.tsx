@@ -1,5 +1,5 @@
 import Carousel from './machine-coding/carousel';
-import ExplorerTab from './react-interview-questions/1-ExplorerTab';
+// import ExplorerTab from './react-interview-questions/1-ExplorerTab';
 
 function App() {
   return (

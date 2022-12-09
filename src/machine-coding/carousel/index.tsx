@@ -12,115 +12,71 @@
 //  https://dominicarrojado.com/posts/how-to-create-your-own-swiper-in-react-and-typescript-with-tests-part-1/
 
 import { useRef, useState } from 'react';
-import { getRefValue, useStateRef } from './hooks';
+import { useStateRef } from './hooks';
 
 const Carousel = () => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [touchPosition, setTouchPosition] = useState<number | null>(null);
-  const [offsetX, setOffsetX, offsetXRef] = useStateRef(0);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+
+  const [offsetX, setOffsetX, offsetXRef] = useStateRef(0); // this will be used to determine how much the list should be translated in the x axis
 
   const currentOffsetXRef = useRef(0);
+
   const startXRef = useRef(0); // stores the starting x position of the touch event
-  const [mouseDragged, setIsMouseDragged] = useState(false);
+
+  const [isMouseDragEnabled, setIsMouseDragEnabled] = useState(false);
 
   const NO_OF_CARDS = 5;
   const CARD_WIDTH = 320;
 
-  // console.log({ touchPosition });
-
-  // add mouse move event listener
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    if (touchPosition === null) {
-      return;
-    }
-  };
-
-  // const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-  //   const touchDown = e.touches[0].clientX;
-  //   console.log('touchDown', touchDown);
-
-  //   setTouchPosition(touchDown);
-  // };
-
-  // add mouse down event listener
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    setTouchPosition(e.clientX);
-    // startX = e.pageX - slider.offsetLeft;
-  };
-
-  const handleTouchMove = (e) => {
-    const touchDown = touchPosition;
-
-    if (touchDown === null) {
-      return;
-    }
-    //    console.log('touchMove', e);
-
-    const currentTouch = e.clientX;
-    const diff = touchDown - currentTouch;
-    console.log('diff', diff);
-
-    if (diff > 5) {
-      setSelectedIndex(selectedIndex + 1);
-    }
-
-    // if (diff < -5) {
-    //   prev();
-    // }
-
-    // setTouchPosition(null);
-  };
-
   // DRAG SCENARIO : START -> onMouseDown -> onMouseMove -> onMouseUp -> END
 
   // store the touch position , reason ?
-  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log('onMouseDown fired', {
-      clientX: e.clientX,
-      screenX: e.screenX,
-    });
+  const onMouseDown = (e: React.MouseEvent) => {
+    console.log('onMouseDown fired');
     e.preventDefault();
 
-    setIsMouseDragged(true);
-
+    setIsMouseDragEnabled(true);
     currentOffsetXRef.current = offsetXRef.current as number;
     startXRef.current = e.clientX;
-
-    // We attached these two events in the window so that even if the mouse cursor goes out of the list element, it will still continue to fire both the mouse move and mouse up event.
-    // window.addEventListener('mousemove', onMouseMove);
-    // window.addEventListener('mouseup', onMouseUp);
   };
 
-  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseMove = (e: MouseEvent) => {
+    console.log('onMouseMove fired');
+
     e.preventDefault();
-    if (!mouseDragged) return;
-    console.log({
-      clientX: e.clientX,
-      screenX: e.screenX,
-    });
-    const diff = e.clientX - startXRef.current; // difference between the starting position and the current position
+    if (!isMouseDragEnabled) return;
 
-    console.log({
-      offset: currentOffsetXRef.current + diff * 1.5,
-    });
-    if (
-      currentOffsetXRef.current + diff * 1.5 < -(CARD_WIDTH * (NO_OF_CARDS - 1)) ||
-      currentOffsetXRef.current + diff * 1.5 > 0
-    ) {
-      console.log('return');
+    const diff = e.clientX - startXRef.current; // difference between  the current position and the starting position
 
+    const offsetToBeSet = currentOffsetXRef.current + diff * 1.5; // multiply the diff by 1.3 to make the movement faster and then add it to the current offset
+    console.log({ offsetToBeSet });
+
+    /* if the the swipe is extends the left or right boundary of the list, then we don't want to move the list
+
+    offsetToBeSet < -(CARD_WIDTH * (NO_OF_CARDS - 1)) : this means that the list is swiped to the left most position , if you try to swipe further, translateX will keep on decreasing and which will make the list go out of the viewport
+    why  (NO_OF_CARDS - 1) ?
+    the reason is when we swiped the list the list to the last card, then the the last card's right end is at the right most position of the viewport, so we are calculating the left most position of the last card by multiplying the width of each card with the number of cards - 1,
+  
+    if there are two cards and the width of each card is 320px, then the left most position will be -320px and the right most position will be 0px
+    offsetToBeSet > 0 : this means that the list is swiped to the right most position, if you try to swipe further, translateX will keep on increasing and which will make the list go out of the viewport
+
+    */
+
+    if (offsetToBeSet < -(CARD_WIDTH * (NO_OF_CARDS - 1)) || offsetToBeSet > 0) {
       return;
     }
-    setOffsetX(currentOffsetXRef.current + diff * 1.5);
 
+    setOffsetX(offsetToBeSet);
+
+    // We attached these two events in the window so that even if the mouse cursor goes out of the list element, it will still continue to fire both the mouse move and mouse up event.
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('mousemove', onMouseMove);
   };
 
-  const onMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onMouseUp = (e: MouseEvent) => {
     e.preventDefault();
     console.log('onMouseUp fired');
-    setIsMouseDragged(false);
+    setIsMouseDragEnabled(false);
 
     window.removeEventListener('mouseup', onMouseUp);
     window.removeEventListener('mousemove', onMouseMove);
@@ -160,10 +116,10 @@ const Carousel = () => {
       {/* Controllers */}
       <div className='absolute flex justify-between w-full -translate-y-1/2 top-1/2'>
         <button
-          disabled={selectedIndex === 0}
+          disabled={currentCardIndex === 0}
           className='p-2 text-white bg-red-500 '
           onClick={() => {
-            setSelectedIndex((index) => {
+            setCurrentCardIndex((index) => {
               console.log({
                 index: index - 1,
                 translateX: -(index - 1) * CARD_WIDTH,
@@ -177,10 +133,10 @@ const Carousel = () => {
           Prev
         </button>
         <button
-          disabled={selectedIndex === 4}
+          disabled={currentCardIndex === 4}
           className='p-2 text-white bg-red-500 '
           onClick={() => {
-            setSelectedIndex((index) => {
+            setCurrentCardIndex((index) => {
               console.log({
                 index: index + 1,
                 translateX: -(index + 1) * CARD_WIDTH,
